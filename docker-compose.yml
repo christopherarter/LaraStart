@@ -1,0 +1,43 @@
+version: '3.8'
+services:
+
+  laravel_app:
+    container_name: laravel_app
+    build: .
+    depends_on:
+      - laravel_db
+    volumes:
+      - .:/var/www/html
+
+  laravel_nginx:
+    build:
+      context: ./docker/nginx
+    container_name: laravel_nginx
+    ports:
+      - 8000:80
+    volumes:
+      - .:/var/www/html
+    depends_on:
+      - laravel_app
+    environment:
+      - NGINX_HOST=laravel_app
+      - NGINX_PORT=9000
+
+  laravel_node:
+    build:
+      context: ./docker/node 
+    container_name: laravel_node
+    volumes:
+      - .:/app
+
+  laravel_db:
+    container_name: laravel_db
+    image: mariadb:10.7
+    ports:
+      - 3306:3306
+    environment:
+      - MYSQL_DATABASE=laravel
+      - MYSQL_USER=root
+      - MYSQL_ROOT_PASSWORD=root
+    volumes:
+      - ./db_data:/var/lib/mysql

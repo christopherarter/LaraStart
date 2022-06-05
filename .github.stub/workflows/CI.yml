@@ -1,0 +1,47 @@
+on: [push]
+jobs:
+  Lint:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - name: Cache composer dependencies
+      uses: actions/cache@v1
+      with:
+        path: vendor
+        key: composer-${{ hashFiles('composer.lock') }}
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: '8.1'
+    - name: Install Composer
+      uses: "ramsey/composer-install@v2"
+      with:
+        composer-options: "--ignore-platform-reqs --optimize-autoloader"
+    - name: PHP_CodeSniffer
+      run: |
+        composer require --dev "squizlabs/php_codesniffer=*"
+        ./vendor/bin/phpcbf
+    - name: PHPStan (LaraStan)
+      run: |
+        composer require --dev nunomaduro/larastan
+        ./vendor/bin/phpstan analyse
+  Test:
+    needs: [Lint]
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: '8.1'
+        tools: php-cs-fixer, phpunit
+    - name: Install Composer
+      uses: "ramsey/composer-install@v2"
+      with:
+        composer-options: "--ignore-platform-reqs --optimize-autoloader"
+    - name: Prepare For Testing
+      run: |
+        cp .env.example .env
+        php artisan key:generate
+    - name: Run Tests
+      run: php artisan test
